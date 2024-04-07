@@ -1,0 +1,95 @@
+Scheme Conv2D
+{
+    // [1] - ширина изображения
+    // [2] - длина изображения
+    // [3] - размерность ядра
+
+    Width = [1];
+    Height = [2];
+    KernelSize = [3];
+
+    Image = ((Width * Height).mul * 1.0).arrayCreate;
+    Kernel = ((([3] * [3]).mul * 1.0).arrayCreate);
+    // @ = ((Image * 0 * Kernel * 0).DotProduct).print;
+    
+    // @ = ((Width * Height * Kernel).LastIndex).print;
+    // @ = ((0 * Width * KernelSize).LastIndex).print;
+
+    // image[0]*kernel[0] + image[1]*kernel[1] + image[4]*kernel[4]
+    // test_ids = (((3 * 0).arrayCreate * 1 * 1).arraySet * 2 * 4).arraySet;
+    // @ = (Image * test_ids * Kernel * test_ids * 0).DotProductIndexed.print;
+    // @ = (0 * KernelSize * 0 * KernelSize).GetImageIds.print;
+
+    @ = (Image * Kernel * KernelSize * Width * 0).Convolve.print;
+    Fun Convolve
+    {
+        Image = [1];
+        Kernel = [2];
+        KernelSize = [3];
+        Width = [4];
+        Index = [5];
+        // "цикл for" по изображению
+        Last = (Index * Width * KernelSize).LastIndex;
+        ImageIds = (Index * Width * 0 * KernelSize).GetImageIds;
+        KernelIds = (0 * KernelSize * 0 * KernelSize).GetImageIds; // всегда одинаковые
+        Dot = (1 * (Image * ImageIds * Kernel * KernelIds * 0).DotProductIndexed).arrayCreate;
+        @ = (Last * (Image.arrayLen * 1).sub).equal -> Dot, (Dot * (Image * Kernel * KernelSize * Width * (Index * 1).add).Convolve).arrayCat;
+        
+    }
+
+    Fun GetImageIds
+    {
+        // возвращает массив индексов изображения для последующей свертки
+        Index = [1];
+        Width = [2];
+        RowIdx = [3];
+        KernelSize = [4];
+        GetRow = (((Index * (RowIdx * Width).mul).add) * (((Index * (RowIdx * Width).mul).add * (KernelSize * 1).sub).add)).RangeArray;
+        @ = (RowIdx * (KernelSize * 1).sub).equal -> GetRow, (GetRow * (Index * Width * (RowIdx * 1).add * KernelSize).GetImageIds).arrayCat;
+                            
+    }
+    Fun RangeArray
+    {
+        // создает массив со значениями в отрезке [Start; End] с интервалом в 1
+        Start = [1];
+        End = [2];
+
+        @ = (Start * End).equal -> (1 * Start).arrayCreate, ((1 * Start).arrayCreate * ((Start * 1).add  * End).RangeArray).arrayCat;
+
+    }
+
+    Fun DotProductIndexed 
+    {
+        // [1] - вектор 1
+        // [2] - индексы вектора 1
+        // [3] - вектор 2
+        // [4] - индексы вектора 2
+        // [5] - текущий offset
+        V1 = [1];
+        V1_ids = [2];
+        V2 = [3];
+        V2_ids = [4];
+        Offset = [5];
+        
+        @ = (Offset * V1_ids.arrayLen).equal -> 0.0, (ElementwiseProduct * (V1 * V1_ids * V2 * V2_ids * (Offset * 1).add).DotProductIndexed).add;
+        // don't repeat yourself unless you really want to
+        FirstElem = (V1 * (V1_ids * Offset).arrayGet).arrayGet;
+        SecondElem = (V2 * (V2_ids * Offset).arrayGet).arrayGet;
+        ElementwiseProduct = (FirstElem * SecondElem).mul;
+
+        
+    }
+
+    Fun LastIndex
+    {
+        // определение последнего индекса для свертки
+        Start = [1];
+        Width = [2];
+        KernelSize = [3];
+
+        @ = ((Start * (KernelSize * 1).sub).add * (Width * (KernelSize * 1).sub).mul).add;
+    }
+     
+}
+Application
+%Conv2D(3, 3, 3)
